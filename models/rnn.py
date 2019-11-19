@@ -6,9 +6,11 @@ from keras.models import Sequential
 from keras.layers import Dense
 from keras.layers import LSTM
 from keras.layers import Dropout
+from keras.layers import Flatten
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.model_selection import train_test_split
-
+from keras.callbacks import CSVLogger
+import os
 
 class RNN:
     def __init__(self):
@@ -24,7 +26,12 @@ class RNN:
             df = df[(df['date'] > '2013-01-01') & (df['date'] < '2018-12-31')] 
         return df
 
-    def format_data(self, data, test_ratio=0.2, lookback_d=90, prediction_d=30 ):
+    def trim_dataset(self, data, batch_size):
+        n = len(data)
+        trim = n % batch_size
+        return data[:n-trim]
+
+    def format_data(self, data, batch_size, test_ratio=0.2, lookback_d=90, prediction_d=30 ):
         # note data is already figured by ticker
         lookback_days = lookback_d # number of days we want to base our prediction on
         prediction_days = prediction_d # number of days we want to predict
@@ -54,9 +61,28 @@ class RNN:
         X_ts_d2 = self.scaler.transform(X_ts_d2)
         X_ts = X_ts_d2.reshape((n, t, d))
 
+        X_tr = self.trim_dataset(X_tr, batch_size)
+        y_tr = self.trim_dataset(y_tr, batch_size)
+        X_ts = self.trim_dataset(X_ts, batch_size)
+        y_ts = self.trim_dataset(y_ts, batch_size)
+        
         return X_tr, X_ts, y_tr, y_ts
 
 
+    def run_model(self, N, T, D, lr, X_tr, X_ts, y_tr, y_ts):
+        y_tr = y_tr.reshape((y_tr.shape[0], y_tr.shape[1]))
+        y_ts = y_ts.reshape((y_ts.shape[0], y_ts.shape[1]))
+        model = Sequential()
+        model.add(LSTM(100, batch_input_shape=(N, T, D), dropout=0.0, recurrent_dropout=0.0, stateful=True,   kernel_initializer='random_uniform'))
+        model.add(Dense(30))
+        optimizer = tf.optimizers.RMSprop(lr=lr)
+        model.compile(loss='mean_squared_error', optimizer=optimizer)
+
+        csv_logger = CSVLogger(os.path.join('/Users/Sai/Desktop/566/Financial-DL/runs/', 'sample' + '.log'), append=True)
+
+        history = model.fit(X_tr, y_tr, epochs=50, verbose=2, batch_size=N, validation_data=(X_ts, y_ts), shuffle=False, callbacks=[csv_logger])
+
 rnn = RNN()
-df = rnn.parse_data("../data/pre_data_10years", "BAC", dummy=True)
-X_tr, X_ts, y_tr, y_ts = rnn.format_data(df)
+df = rnn.parse_data("../data/pre_data_10years", "BAC")
+X_tr, X_ts, y_tr, y_ts = rnn.format_data(df, 20)
+rnn.run_model(20, 90, 2, 0.9, X_tr, X_ts, y_tr, y_ts)
