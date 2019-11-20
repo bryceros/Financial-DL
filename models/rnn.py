@@ -68,21 +68,27 @@ class RNN:
         
         return X_tr, X_ts, y_tr, y_ts
 
+    def init_model(self, batch_size, lookback_days, D, prediction_days, lr):
+        self.model = Sequential()
+        self.model.add(LSTM(100, batch_input_shape=(batch_size, lookback_days, D), dropout=0.0, recurrent_dropout=0.0, stateful=True,   kernel_initializer='random_uniform'))
+        self.model.add(Dense(prediction_days))
+        optimizer = tf.optimizers.RMSprop(lr=lr)
+        self.model.compile(loss='mean_squared_error', optimizer=optimizer)
 
-    def run_model(self, N, T, D, lr, X_tr, X_ts, y_tr, y_ts):
+    def run_model(self, batch_size, epochs, X_tr, X_ts, y_tr, y_ts):
         y_tr = y_tr.reshape((y_tr.shape[0], y_tr.shape[1]))
         y_ts = y_ts.reshape((y_ts.shape[0], y_ts.shape[1]))
-        model = Sequential()
-        model.add(LSTM(100, batch_input_shape=(N, T, D), dropout=0.0, recurrent_dropout=0.0, stateful=True,   kernel_initializer='random_uniform'))
-        model.add(Dense(30))
-        optimizer = tf.optimizers.RMSprop(lr=lr)
-        model.compile(loss='mean_squared_error', optimizer=optimizer)
 
         csv_logger = CSVLogger(os.path.join('/Users/Sai/Desktop/566/Financial-DL/runs/', 'sample' + '.log'), append=True)
+        history = self.model.fit(X_tr, y_tr, epochs=epochs, verbose=2, batch_size=batch_size, validation_data=(X_ts, y_ts), shuffle=False, callbacks=[csv_logger])
 
-        history = model.fit(X_tr, y_tr, epochs=50, verbose=2, batch_size=N, validation_data=(X_ts, y_ts), shuffle=False, callbacks=[csv_logger])
-
+batch_size = 100
+lookback_days = 150
+prediction_days = 30
+dimensions = 2
+epochs = 100
 rnn = RNN()
 df = rnn.parse_data("../data/pre_data_10years", "BAC")
-X_tr, X_ts, y_tr, y_ts = rnn.format_data(df, 20)
-rnn.run_model(20, 90, 2, 0.9, X_tr, X_ts, y_tr, y_ts)
+X_tr, X_ts, y_tr, y_ts = rnn.format_data(df, 100, lookback_d=lookback_days, prediction_d=prediction_days)
+rnn.init_model(batch_size, lookback_days, dimensions, prediction_days, 0.6)
+rnn.run_model(batch_size, epochs, X_tr, X_ts, y_tr, y_ts)
