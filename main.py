@@ -8,6 +8,7 @@ from stable_baselines import PPO2, A2C
 import matplotlib.pyplot as plt
 
 from model import CustomPolicy
+from randmodel import RandomPolicy
 from env.StockTradingEnv import StockTradingEnv
 
 import pandas as pd
@@ -34,11 +35,10 @@ print(df.isnull().sum().sum())
 env = DummyVecEnv([lambda: StockTradingEnv(df)])
 
 model = PPO2(CustomPolicy, env, verbose=11, tensorboard_log="./log/ppo2_stock_tensorboard/")
-
+#model = PPO2(RandomPolicy, env, verbose=11, tensorboard_log="./log/rand_stock_tensorboard/")
 for epoch in range(1):
 
     model.learn(total_timesteps=200000)
-    #model.learn(total_timesteps=200)
 
     obs = env.reset()
     rewards,success_rate = [], []

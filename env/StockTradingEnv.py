@@ -29,35 +29,14 @@ class StockTradingEnv(gym.Env):
 
         # Actions of the format Buy x%, Sell x%, Hold, etc.
         '''self.action_space = spaces.Box(
-            low=np.array([0, 0]), high=np.array([3, 1]), dtype=np.float16)'''
-        
-        '''self.action_space = spaces.Tuple(tuple([spaces.Box(
-            low=np.array([0, 0]), high=np.array([3, 1]), dtype=np.float16)]*len(comp)))'''
-        
-        self.action_space = spaces.Box(
-            low=np.array([0, 0, 0]), high=np.array([len(comp),3, 1]), dtype=np.float16)
+            low=np.array([0, 0, 0]), high=np.array([len(comp),3, 1]), dtype=np.float16)'''
+        self.action_space = spaces.MultiDiscrete([3,255]*len(comp))
 
         # Prices contains the OHCL values for the last five prices
-        '''self.observation_space = spaces.Box(
-            low=0, high=1, shape=(6,6), dtype=np.float16)'''
-        '''self.observation_space = spaces.Box(
-            low=0, high=1, shape=(len(comp)*len(attr)+1,6), dtype=np.float16)'''
         self.observation_space = spaces.Box(low=0, high=1, shape=(6+1,max(len(comp)*len(attr),4*len(comp)+2)), dtype=np.float16)
     
     def _next_observation(self):
         # Get the stock data points for the last 5 days and scale to between 0-1
-        '''frame = np.array([
-            self.df.loc[self.current_step: self.current_step +
-                        5, 'Open'].values / MAX_SHARE_PRICE,
-            self.df.loc[self.current_step: self.current_step +
-                        5, 'High'].values / MAX_SHARE_PRICE,
-            self.df.loc[self.current_step: self.current_step +
-                        5, 'Low'].values / MAX_SHARE_PRICE,
-            self.df.loc[self.current_step: self.current_step +
-                        5, 'Close'].values / MAX_SHARE_PRICE,
-            self.df.loc[self.current_step: self.current_step +
-                        5, 'Volume'].values / MAX_NUM_SHARES,
-        ])'''
 
         #self.current_step = 396
         frame = []
@@ -96,42 +75,40 @@ class StockTradingEnv(gym.Env):
     
     def _take_action(self, action):
         # Set the current price to a random price within the time step
-        '''current_price = random.uniform(
-            self.df.loc[self.current_step, "Open"], self.df.loc[self.current_step, "Close"])'''
-        i = np.int(np.floor(action[0]))
-        #i = 0
-        current_price = self.df.loc[self.current_step,self.comp[i]+'_PRC']
-        total_price = np.array([self.df.loc[self.current_step,c+'_PRC'] for c in self.comp])
-        action_type = action[-2]
-        amount = action[-1]
+        
+        for i in range(len(self.comp)):
+            current_price = self.df.loc[self.current_step,self.comp[i]+'_PRC']
+            total_price = np.array([self.df.loc[self.current_step,c+'_PRC'] for c in self.comp])
+            action_type = action[i*2]
+            amount = action[(i*2)+1]
 
-        if action_type < 1:
-            # Buy amount % of balance in shares
-            total_possible = int(self.balance / current_price)
-            shares_bought = int(total_possible * amount)
-            prev_cost = self.cost_basis[i] * self.shares_held[i]
-            additional_cost = shares_bought * current_price
+            if action_type < 1:
+                # Buy amount % of balance in shares
+                total_possible = int(self.balance / current_price)
+                shares_bought = int(min(total_possible,amount))
+                prev_cost = self.cost_basis[i] * self.shares_held[i]
+                additional_cost = shares_bought * current_price
 
-            self.balance -= additional_cost
-            self.cost_basis[i] = (
-                prev_cost + additional_cost) / (self.shares_held[i] + shares_bought)
-            self.shares_held[i] += shares_bought
+                self.balance -= additional_cost
+                self.cost_basis[i] = (
+                    prev_cost + additional_cost) / (self.shares_held[i] + shares_bought)
+                self.shares_held[i] += shares_bought
 
-        elif action_type < 2:
-            # Sell amount % of shares held
-            shares_sold = int(self.shares_held[i] * amount)
-            self.balance += shares_sold * current_price
-            self.shares_held[i] -= shares_sold
-            self.total_shares_sold[i] += shares_sold
-            self.total_sales_value[i] += shares_sold * current_price
+            elif action_type < 2:
+                # Sell amount % of shares held
+                shares_sold = int(min(self.shares_held[i], amount))
+                self.balance += shares_sold * current_price
+                self.shares_held[i] -= shares_sold
+                self.total_shares_sold[i] += shares_sold
+                self.total_sales_value[i] += shares_sold * current_price
 
-        self.net_worth = self.balance + np.sum(self.shares_held * total_price)
+            self.net_worth = self.balance + np.sum(self.shares_held * total_price)
 
-        if self.net_worth > self.max_net_worth:
-            self.max_net_worth = self.net_worth
+            if self.net_worth > self.max_net_worth:
+                self.max_net_worth = self.net_worth
 
-        if self.shares_held[i] == 0:
-            self.cost_basis[i] = 0
+            if self.shares_held[i] == 0:
+                self.cost_basis[i] = 0
 
     def step(self, action):
         # Execute one time step within the environment
