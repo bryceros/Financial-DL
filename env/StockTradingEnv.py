@@ -18,12 +18,13 @@ class StockTradingEnv(gym.Env):
     """A stock trading environment for OpenAI gym"""
     metadata = {'render.modes': ['human']}
 
-    def __init__(self, df, comp=['TROW', 'CMA', 'BEN', 'WFC', 'JPM', 'BK', 'NTRS', 'AXP', 'BAC', 'USB', 'MS', 'RJF', 'C', 'STT', 'SCHW', 'COF', 'IVZ','ETFC','AMG','GS','BLK','AMP','DFS'],attr = ['PRC','VOL','BID','ASK']):
+    def __init__(self, df, istraining,comp=['TROW', 'CMA', 'BEN', 'WFC', 'JPM', 'BK', 'NTRS', 'AXP', 'BAC', 'USB', 'MS', 'RJF', 'C', 'STT', 'SCHW', 'COF', 'IVZ','ETFC','AMG','GS','BLK','AMP','DFS'],attr = ['PRC','VOL','BID','ASK']):
         super(StockTradingEnv, self).__init__()
 
         self.df = df
         self.comp = comp
         self.attr = attr
+        self.train = istraining
 
         self.reward_range = (0, MAX_ACCOUNT_BALANCE)
 
@@ -34,7 +35,7 @@ class StockTradingEnv(gym.Env):
 
         # Prices contains the OHCL values for the last five prices
         self.observation_space = spaces.Box(low=0, high=1, shape=(6+1,max(len(comp)*len(attr),4*len(comp)+2)), dtype=np.float16)
-    
+
     def _next_observation(self):
         # Get the stock data points for the last 5 days and scale to between 0-1
 
@@ -79,10 +80,10 @@ class StockTradingEnv(gym.Env):
         for i in range(len(self.comp)):
             current_price = self.df.loc[self.current_step,self.comp[i]+'_PRC']
             total_price = np.array([self.df.loc[self.current_step,c+'_PRC'] for c in self.comp])
-            action_type = action[i*2]
-            amount = action[(i*2)+1]
+            action_type = action[int(i*2)]
+            amount = action[int(i*2)+1]
 
-            if action_type < 1:
+            if action_type <= 1:
                 # Buy amount % of balance in shares
                 total_possible = int(self.balance / current_price)
                 shares_bought = int(min(total_possible,amount))
@@ -94,7 +95,7 @@ class StockTradingEnv(gym.Env):
                     prev_cost + additional_cost) / (self.shares_held[i] + shares_bought)
                 self.shares_held[i] += shares_bought
 
-            elif action_type < 2:
+            elif action_type <= 2:
                 # Sell amount % of shares held
                 shares_sold = int(min(self.shares_held[i], amount))
                 self.balance += shares_sold * current_price
@@ -119,7 +120,7 @@ class StockTradingEnv(gym.Env):
         if self.current_step > len(self.df.loc[:, 'TROW_PRC'].values) - 6:
             self.current_step = 0
 
-        delay_modifier = (self.current_step / MAX_STEPS)
+        delay_modifier = (1.0/(self.current_step+1))
 
         reward = self.net_worth * delay_modifier
         done = self.net_worth <= 0
@@ -143,10 +144,12 @@ class StockTradingEnv(gym.Env):
         self.cost_basis = np.zeros(len(self.comp))
         self.total_shares_sold = np.zeros(len(self.comp))
         self.total_sales_value = np.zeros(len(self.comp))
-
-        # Set the current step to a random point within the data frame
-        self.current_step = random.randint(
-            0, len(self.df.loc[:, 'TROW_PRC'].values) - 6)
+        
+        if self.train:
+            # Set the current step to a random point within the data frame
+            self.current_step = random.randint(0, len(self.df.loc[:, 'TROW_PRC'].values) - 6)
+        else:
+            self.current_step = 0
 
         return self._next_observation()
 

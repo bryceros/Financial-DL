@@ -1,6 +1,5 @@
 import tensorflow as tf
 
-from stable_baselines import PPO2
 from stable_baselines.common.policies import ActorCriticPolicy, register_policy, nature_cnn
 
 
