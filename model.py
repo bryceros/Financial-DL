@@ -36,6 +36,15 @@ class CustomPolicy(ActorCriticPolicy):
 
         self._value_fn = value_fn
         self._setup_init()
+    def save(self,filename):
+        saver = tf.train.Saver()
+        model_path = saver.save(self.sess, filename+".ckpt")
+        print("Model saved in %s" % model_path)
+
+    def load(self,filename):
+        saver = tf.train.Saver()
+        saver.restore(self.sess, filename+".ckpt")
+        print("Model loaded in %s" % filename+".ckpt")
 
     def step(self, obs, state=None, mask=None, deterministic=False):
         if deterministic:

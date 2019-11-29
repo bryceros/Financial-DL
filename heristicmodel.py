@@ -31,24 +31,26 @@ class Heristic():
         """
 
         frames = obs[:,:-1]
-        frame = frames[:,-1,:]
-        frame = frame[:,:-2]
+        frame = frames[:,:,:-2]
 
-        top = []
-        bottom = []
+
+        comp = []
+        aver = []
         for comp_i in range(int(self.ac_space.shape[0]/2)):
-            top.append(frame[0][int(4*comp_i)])
-            bottom.append(frame[0][int(4*comp_i)+1])
-        comp = np.array(top) / np.array(bottom)
-        aver = np.mean(comp)
-
-        actions_index = np.argmax(aver - comp)
-        actions_amount = aver - comp[actions_index]
+            top = []
+            bottom = []
+            for i in range(frame.shape[1]):
+                top.append(frame[0][i][int(4*comp_i+2)])
+                bottom.append(frame[0][i][int(4*comp_i)+3])
+            comp.append(np.array(top) / np.array(bottom))
+            aver.append(np.mean(comp))
+        comp = np.array(comp)
+        aver = np.array(aver)
+        actions_index = np.argmax(aver - comp[:,-1])
 
         actions = np.zeros(self.ac_space.shape)
         actions[::2] = 2
         actions[1::2] = 255
         actions[2*actions_index] = 1
-        actions[2*actions_index+1] = actions_amount
         actions = np.array(actions).reshape(1,-1)
         return actions, None, None
