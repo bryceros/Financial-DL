@@ -35,8 +35,10 @@ def run_model(is_train=True,model_name='rl_model'):
     train = df[:int(0.9 * len(df))].reset_index()
     test = df[int(0.9 * len(df)):].reset_index()
     # The algorithms require a vectorized environment to run
-    env = DummyVecEnv([lambda: StockTradingEnv(train, train, 30, True)])
-    env_test = DummyVecEnv([lambda: StockTradingEnv(test, train, 30, False)])
+    if is_train:
+        env = DummyVecEnv([lambda: StockTradingEnv(train, train, 30, True)])
+    else:
+        env = DummyVecEnv([lambda: StockTradingEnv(test, train, 30, False)])
 
     if is_train and model_name == 'rl_rand_model':
         model = PPO2(RandomPolicy, env, verbose=11, tensorboard_log="./log/rand_stock_tensorboard/")
@@ -51,48 +53,36 @@ def run_model(is_train=True,model_name='rl_model'):
         model = PPO2.load("./ckpt/rl_model")
 
     elif not is_train and model_name == 'hr_model':
-        model = Heristic(env_test)
+        model = Heristic(env)
     elif is_train and model_name == 'hr_model':
         model = Heristic(env)
 
     elif not is_train and model_name == 'rnn_model':
-        model = Baseline(env_test)
+        model = Baseline(env)
     elif is_train and model_name == 'rnn_model':
         model = Baseline(env)
     else:
         assert False
 
-    if not is_train:
-
-        for epoch in range(1):
-            obs = env_test.reset()
-            rewards = []
-            for i in range(len(test.loc[:, 'TROW_PRC'].values) - 30):
-                action, _states = model.predict(obs)
-                obs, reward, done, info = env_test.step(action)
-                rewards.append(reward[0])
-                env_test.render()
-            plt.plot(rewards)
-            plt.show()
-    else:
-
-        for epoch in range(1):
-            obs = env.reset()
-            if model_name =='rl_model':
-                model.learn(total_timesteps=500000)
-            model.save("./ckpt/"+model_name)
-            rewards = []
-            for i in range(len(test.loc[:, 'TROW_PRC'].values) - 30):
-                action, _states = model.predict(obs)
-                obs, reward, done, info = env.step(action)
-                rewards.append(reward[0])
-                env.render()
-            plt.plot(rewards)
-            plt.show()
+    for epoch in range(1):
+        obs = env.reset()
+        if model_name =='rl_model' and is_train:
+            model.learn(total_timesteps=500000)
+        rewards = []
+        for i in range(len(test.loc[:, 'TROW_PRC'].values) - 30):
+            action, _states = model.predict(obs)
+            obs, reward, done, info = env.step(action)
+            rewards.append(reward[0])
+            env.render()
+        plt.plot(rewards,label=model_name)
 
 
 
 if __name__ == '__main__':
-    run_model()
-    run_model(False)
+    models = [('rl_model',False),('rl_rand_model',False),('hr_model', False)]
+    for name, is_train in models:
+        run_model(is_train,name)
+    plt.legend()
+    plt.show()
+
 
