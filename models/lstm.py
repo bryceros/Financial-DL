@@ -42,24 +42,10 @@ class Model:
         n = len(data)
         trim = n % batch_size
         return data[:n-trim]
-        
-    def split_data(self, X, y, test, cross_validation, batch_size):
-        # IMPORTANT NOTE: test is the fraction of the overall dataset (X, y) that will be used for testing
-        # so if (X, y) is 1000 records long and test = 0.2 then 800 samples will be used in training and 200 in testing
-        # cross_validation is WITHIN the training samples how many will be used for cross validation, so if cross_validation = 0.1
-        # then 800 * 0.1 = 80 will be used for cross validation and the other 720 for normal training
-        # final splits: N = len(X), X_test = test*N, X_cv = (1-test)*cross_validation*N, X_tr = (1-test)*(1-cross_validation)*N
 
-        X_train, X_ts, y_train, y_ts = train_test_split(X, y, test_size=test)
-        X_tr, X_cv, y_tr, y_cv = train_test_split(X_train, y_train, test_size=cross_validation)
-        X_tr = self.trim_dataset(X_tr, batch_size)
-        X_cv = self.trim_dataset(X_cv, batch_size)
-        X_ts = self.trim_dataset(X_ts, batch_size)
-        y_tr = self.trim_dataset(y_tr, batch_size)
-        y_cv = self.trim_dataset(y_cv, batch_size)
-        y_ts = self.trim_dataset(y_ts, batch_size)
-        return X_tr, X_cv, X_ts, y_tr, y_cv, y_ts
-
+    def create_flat_price(self, df, feature_columns=['PRC']):
+        return df[['PRC']].to_numpy().flatten()
+    
     def create_features_labels(self, df, lookback_days, prediction_days, feature_columns=['PRC']):
         # feature columns is the columns to keep as feature for example  feature_columns=['PERMNO', 'date', 'TICKER','PRC', 'VOL']
         # df is the stock price informtion for a single stock
@@ -75,58 +61,114 @@ class Model:
         X = np.array(X)
         Y = np.array(Y)
         return X, Y
+        
+    def split_data(self, df, test, cross_validation, batch_size, lookback_days, prediction_days, feature_columns=['PRC']):
+        # IMPORTANT NOTE: test is the fraction of the overall dataset (X, y) that will be used for testing
+        # so if (X, y) is 1000 records long and test = 0.2 then 800 samples will be used in training and 200 in testing
+        # cross_validation is WITHIN the training samples how many will be used for cross validation, so if cross_validation = 0.1
+        # then 800 * 0.1 = 80 will be used for cross validation and the other 720 for normal training
+        # final splits: N = len(X), X_test = test*N, X_cv = (1-test)*cross_validation*N, X_tr = (1-test)*(1-cross_validation)*N
+        X,y = self.create_features_labels(df, lookback_days, prediction_days, feature_columns)
+        X_train, X_ts, y_train, y_ts = train_test_split(X, y, test_size=test)
+        X_tr, X_cv, y_tr, y_cv = train_test_split(X_train, y_train, test_size=cross_validation)
+        X_tr = self.trim_dataset(X_tr, batch_size)
+        X_cv = self.trim_dataset(X_cv, batch_size)
+        X_ts = self.trim_dataset(X_ts, batch_size)
+        y_tr = self.trim_dataset(y_tr, batch_size)
+        y_cv = self.trim_dataset(y_cv, batch_size)
+        y_ts = self.trim_dataset(y_ts, batch_size)
 
-    def init_model(self):
-        self.model = Sequential()
-        batch_input_shape = (self.batch_size, self.lookback_days, self.dim)
-        self.model.add(LSTM(100, batch_input_shape=batch_input_shape, dropout=0.0, recurrent_dropout=0.0, stateful=True,   kernel_initializer='random_uniform'))
-        self.model.add(Dropout(0.3))
-        self.model.add(Dense(20,activation='relu'))
-        self.model.add(Dense(1,activation='sigmoid'))
-        optimizer = tf.optimizers.RMSprop(lr=lr)
-        self.model.compile(loss='mean_squared_error', optimizer=optimizer)
+        self.X_tr = X_tr; self.X_cv = X_cv; self.X_ts = X_ts; self.y_tr = y_tr; self.y_cv = y_cv; self.y_ts = y_ts
+        return X_tr, X_cv, X_ts, y_tr, y_cv, y_ts
 
-    def build_model(self, X_tr, X_cv, y_tr, y_cv, verbose=2):
+    def split_data_last_year_test(self, df, cross_validation, batch_size, lookback_days, prediction_days, feature_columns=['PRC']):
+        train_df = df[df['date']<'2018-01-01']
+        ts_df = df[df['date']>='2018-01-01']
+        # self.scaler.fit(train_df[feature_columns].to_numpy())
+        self.train_df = train_df
+        self.ts_df = ts_df
+        self.flat_train = self.create_flat_price(train_df)
+        self.flat_test = self.create_flat_price(ts_df)
+        X_train, y_train = self.create_features_labels(train_df, lookback_days, prediction_days, feature_columns)
+        # (N, T, D) = X_train.shape
+        # X_train = X_train.reshape((N*T, D))
+        # X_train = self.scaler.transform(X_train)
+        # X_train = X_train.reshape((N, T, D))
+        X_ts, y_ts = self.create_features_labels(ts_df, lookback_days, prediction_days, feature_columns)
+        X_tr, X_cv, y_tr, y_cv = train_test_split(X_train, y_train, test_size=cross_validation)
+        X_tr = self.trim_dataset(X_tr, batch_size)
+        X_cv = self.trim_dataset(X_cv, batch_size)
+        X_ts = self.trim_dataset(X_ts, batch_size)
+        y_tr = self.trim_dataset(y_tr, batch_size)
+        y_cv = self.trim_dataset(y_cv, batch_size)
+        y_ts = self.trim_dataset(y_ts, batch_size)
+        self.X_tr = X_tr; self.X_cv = X_cv; self.X_ts = X_ts; self.y_tr = y_tr; self.y_cv = y_cv; self.y_ts = y_ts
+        return X_tr, X_cv, X_ts, y_tr, y_cv, y_ts
+        
+    def init_model(self, input_shape):
         # define model
         self.model = Sequential()
-        self.model.add(LSTM(200, activation='relu', input_shape=(X_tr.shape[1], X_tr.shape[2])))
+        self.model.add(LSTM(200, activation='relu', input_shape=input_shape))
+        self.model.add(Dropout(0.2))
         self.model.add(Dense(100, activation='relu'))
+        self.model.add(Dropout(0.2))
         self.model.add(Dense(self.prediction_days))
         self.model.compile(loss='mse', optimizer='adam')
+        return self.model
+
+    def train_model(self, X_tr, X_cv, y_tr, y_cv, verbose=2):
         # fit network
         self.model.fit(X_tr, y_tr, validation_data=(X_cv, y_cv), epochs=self.epochs, batch_size=self.batch_size, verbose=verbose)
         self.save_model()
-        
         return self.model
 
     def save_model(self):
         timestr = time.strftime("%Y%m%d-%H%M%S")
         filename = os.path.join('/Users/Sai/Desktop/566/Financial-DL/saved_models',self.ticker + '_'+timestr)
         self.model.save(filename)
+
+    def load_model(self, weight_file):
+        self.model.load_weights(weight_file)
+        # play around with model here if you want
+        # testing data is available at self.X_ts and self.y_ts after create_features_labels is run
+        # for example
+        # pred = model.predict(self.X_t)
+        return self.model
         
-    # train the model
-    def train_model(self, batch_size, epochs, X_tr, X_cv, y_tr, y_cv):
-        y_tr = y_tr.reshape((y_tr.shape[0], y_tr.shape[1]))
-        y_ts = y_ts.reshape((y_ts.shape[0], y_ts.shape[1]))
+    
+def testing_helper(actual, pred):
+    actual_0 = actual[:, 0]
+    pred_0 = pred[:, 0]
+    pred_1 = pred[:, 1]
+    pred_1 = np.delete(pred_1, pred_1.shape[0]-1)
+    pred_1 = np.insert(pred_1, 0, pred_1[0])
+    plt.figure()
+    plt.plot(actual_0, 'g')
+    plt.plot(pred_0, 'b')
+    plt.plot(pred_1, 'r')
+    plt.show(block=False)
 
-        history = self.model.fit(X_tr, y_tr, epochs=epochs, verbose=2, batch_size=batch_size, validation_data=(X_ts, y_ts), shuffle=False)
-        timestr = time.strftime("%Y%m%d-%H%M%S")
-        filename = os.path.join('/Users/Sai/Desktop/566/Financial-DL/saved_models/', timestr)+'_weights'
-        self.model.save(filename)
-
-
-
-BATCH_SIZE = 100
-EPOCHS = 2
+TICKER = "JPM"
+BATCH_SIZE = 50
+EPOCHS = 300
 LEARNING_RATE = 0.6
+TEST_RATIO = 0.2
+CROSS_VALIDATION_RATIO = 0.2
 LOOKBACK_DAYS = 30
 PREDICTION_DAYS = 5
-TICKER = "BAC"
 DATA_FILE = "../data/pre_data_10years"
 FEATURE_COLUMNS=['PRC']
 DIM = len(FEATURE_COLUMNS)
 lstm = Model(TICKER, BATCH_SIZE, EPOCHS, LEARNING_RATE, LOOKBACK_DAYS, PREDICTION_DAYS, DIM)
 df = lstm.parse_data(DATA_FILE, TICKER)
-X,y = lstm.create_features_labels(df, LOOKBACK_DAYS, PREDICTION_DAYS, feature_columns=['PRC'])
-X_tr, X_cv, X_ts, y_tr, y_cv, y_ts = lstm.split_data(X, y, 0.2, 0.2, BATCH_SIZE)
-lstm.build_model(X_tr, X_cv, y_tr, y_cv)
+df['PRC'] = np.log(df['PRC'])
+# X_tr, X_cv, X_ts, y_tr, y_cv, y_ts = lstm.split_data(df, TEST_RATIO, CROSS_VALIDATION_RATIO, BATCH_SIZE, LOOKBACK_DAYS, PREDICTION_DAYS, FEATURE_COLUMNS)
+X_tr, X_cv, X_ts, y_tr, y_cv, y_ts = lstm.split_data_last_year_test(df, CROSS_VALIDATION_RATIO, BATCH_SIZE, LOOKBACK_DAYS, PREDICTION_DAYS, FEATURE_COLUMNS)
+# lstm.build_model(X_tr, X_cv, y_tr, y_cv)
+filename = '/Users/Sai/Desktop/566/Financial-DL/saved_models/JPM_20191130-021338'
+model = lstm.init_model(X_tr.shape[1:])
+model = lstm.train_model(X_tr, X_cv, y_tr, y_cv)
+
+pred = model.predict(X_ts)
+testing_helper(y_ts, pred)
+
