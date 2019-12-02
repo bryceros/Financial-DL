@@ -11,7 +11,7 @@ class Baseline():
         # init 
         self.ac_space = env.action_space
         self.processed_obs = tf.placeholder(shape=[None,env.buf_obs[None].shape[1],env.buf_obs[None].shape[2]],dtype=tf.float32)
-        self.comp = ['TROW', 'CMA', 'BEN', 'WFC', 'JPM', 'BK', 'NTRS', 'AXP', 'BAC', 'USB', 'MS', 'RJF', 'C', 'STT', 'SCHW', 'COF', 'IVZ','ETFC','AMG','GS','BLK','AMP','DFS']
+        self.comp = ['TROW', 'CMA', 'BEN', 'WFC', 'JPM', 'BK', 'NTRS', 'AXP', 'BAC', 'USB', 'RJF', 'C', 'STT', 'SCHW', 'COF', 'IVZ','ETFC','AMG','GS','BLK','AMP','DFS']
         # basic model
         self.models = {}
         for c in self.comp:
@@ -50,12 +50,12 @@ class Baseline():
         for i,c in zip(range(len(self.comp)),self.comp):
             s = obs[:,:,i]
             s1= s[:,:,np.newaxis]
-            output.append(self.models[c].model.predict(obs[:,:,i][:,:,np.newaxis])[0,0]-obs[:,-1,i])
-
+            output.extend(self.models[c].model.predict(obs[:,:,i][:,:,np.newaxis])[0,0]-obs[:,-1,i])
         comp_i = np.argmax(output,axis=-1)
         
         actions = np.zeros(self.ac_space.shape)
         actions[::2] = 2
         actions[1::2] = 255
-        actions[2*comp_i] = 1
+        if output[comp_i] > 0:
+            actions[2*comp_i] = 1
         return np.array([actions]), None, None

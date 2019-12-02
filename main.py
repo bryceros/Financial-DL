@@ -79,16 +79,16 @@ def run_model(is_train=True,model_name='rl_model'):
             obs, reward, done, info = env.step(action)
             success.append(info[0]['success_rate'])
             env.render()
-        #plt.plot(success,label=model_name)
+        plt.plot(success,label=model_name)
+        plt.show(block=False)
 
 
 
 if __name__ == '__main__':
     models = [('rl_model',False),('rl_rand_model',False),('hr_model', False),('rnn_model',False)]
     #models = [('rl_model',True)]
+    plt.figure()
     for name, is_train in models:
         run_model(is_train,name)
-    #plt.legend()
-    #plt.show()
 
 
