@@ -11,6 +11,11 @@ from sklearn.preprocessing import MinMaxScaler
 from sklearn.model_selection import train_test_split
 from keras.callbacks import CSVLogger
 import os
+import matplotlib
+matplotlib.use('TkAgg')
+from matplotlib import pyplot as plt
+import time
+
 
 class RNN:
     def __init__(self):
@@ -42,7 +47,8 @@ class RNN:
             # for debugging purposes this data can be generated with date column
             # xi = data[['date','PRC','VOL']][i:i+lookback_days]
             # yi = data[['date','PRC']][i+lookback_days:i+lookback_days+prediction_days]
-            xi = data[['PRC','VOL']][i:i+lookback_days].to_numpy()
+            xi = data[['PRC']][i:i+lookback_days].to_numpy()
+            # xi = data[['PRC','VOL']][i:i+lookback_days].to_numpy()
             yi = data[['PRC']][i+lookback_days:i+lookback_days+prediction_days].to_numpy()
             X.append(xi)
             Y.append(yi)
@@ -71,7 +77,9 @@ class RNN:
     def init_model(self, batch_size, lookback_days, D, prediction_days, lr):
         self.model = Sequential()
         self.model.add(LSTM(100, batch_input_shape=(batch_size, lookback_days, D), dropout=0.0, recurrent_dropout=0.0, stateful=True,   kernel_initializer='random_uniform'))
-        self.model.add(Dense(prediction_days))
+        self.model.add(Dropout(0.5))
+        self.model.add(Dense(20,activation='relu'))
+        self.model.add(Dense(1,activation='sigmoid'))
         optimizer = tf.optimizers.RMSprop(lr=lr)
         self.model.compile(loss='mean_squared_error', optimizer=optimizer)
 
@@ -79,16 +87,87 @@ class RNN:
         y_tr = y_tr.reshape((y_tr.shape[0], y_tr.shape[1]))
         y_ts = y_ts.reshape((y_ts.shape[0], y_ts.shape[1]))
 
-        csv_logger = CSVLogger(os.path.join('/Users/Sai/Desktop/566/Financial-DL/runs/', 'sample' + '.log'), append=True)
-        history = self.model.fit(X_tr, y_tr, epochs=epochs, verbose=2, batch_size=batch_size, validation_data=(X_ts, y_ts), shuffle=False, callbacks=[csv_logger])
+        history = self.model.fit(X_tr, y_tr, epochs=epochs, verbose=2, batch_size=batch_size, validation_data=(X_ts, y_ts), shuffle=False)
+        timestr = time.strftime("%Y%m%d-%H%M%S")
+        filename = os.path.join('/Users/Sai/Desktop/566/Financial-DL/saved_models/', timestr)+'_weights'
+        self.model.save(filename)
+
+class RNN2(RNN):
+
+    def format_data2(self, data, batch_size, test_ratio=0.2, lookback_d=90, prediction_d=30 ):
+        # note data is already figured by ticker
+        lookback_days = lookback_d # number of days we want to base our prediction on
+        prediction_days = prediction_d # number of days we want to predict
+        
+        X = []
+        Y = []
+        for i in range(len(data)-lookback_days-prediction_days):
+            # for debugging purposes this data can be generated with date column
+            # xi = data[['date','PRC','VOL']][i:i+lookback_days]
+            # yi = data[['date','PRC']][i+lookback_days:i+lookback_days+prediction_days]
+            xi = data[['PRC']][i:i+lookback_days].to_numpy()
+            # xi = data[['PRC','VOL']][i:i+lookback_days].to_numpy()
+            yi = data[['PRC']][i+lookback_days:i+lookback_days+prediction_days].to_numpy()
+            xi = xi.reshape((lookback_d))
+            yi = yi.reshape((prediction_d))
+            X.append(xi)
+            Y.append(yi)
+
+        X = np.array(X)
+        y = np.array(Y)
+        X_tr, X_ts, y_tr, y_ts = train_test_split(X, y, train_size=(1-test_ratio), test_size=test_ratio,shuffle=False)
+        
+        X_tr = self.scaler.fit_transform(X_tr)
+        X_ts = self.scaler.transform(X_ts)
+        
+        X_tr = self.trim_dataset(X_tr, batch_size)
+        y_tr = self.trim_dataset(y_tr, batch_size)
+        X_ts = self.trim_dataset(X_ts, batch_size)
+        y_ts = self.trim_dataset(y_ts, batch_size)
+        
+        return X_tr, X_ts, y_tr, y_ts
+
+    def init_model2(self, batch_size, lookback_days, prediction_days, lr):
+        self.model = Sequential()
+        self.model.add(LSTM(100, batch_input_shape=(batch_size, lookback_days, 0), dropout=0.0, recurrent_dropout=0.0, stateful=True,   kernel_initializer='random_uniform'))
+        self.model.add(Dropout(0.5))
+        self.model.add(Dense(20,activation='relu'))
+        self.model.add(Dense(1,activation='sigmoid'))
+        optimizer = tf.optimizers.RMSprop(lr=lr)
+        self.model.compile(loss='mean_squared_error', optimizer=optimizer)
+
+    def run_model2(self, batch_size, epochs, X_tr, X_ts, y_tr, y_ts):
+        history = self.model.fit(X_tr, y_tr, epochs=epochs, verbose=2, batch_size=batch_size, validation_data=(X_ts, y_ts), shuffle=False)
+        timestr = time.strftime("%Y%m%d-%H%M%S")
+        filename = os.path.join('/Users/Sai/Desktop/566/Financial-DL/saved_models/', timestr)+'_weights'
+        self.model.save(filename)
+
+
+def plot_data(df, ticker=None):
+    if ticker:
+        df = df.loc[df["TICKER"] == ticker]
+        plt.figure()
+        plt.plot(df["PRC"])
+        plt.legend(['PRC'], loc='upper left')
+        plt.show()
+    else:
+        tickers = df.TICKER.unique()
+        for ticker in tickers[:3]:
+            plt.figure()
+            df2 = df.loc[df["TICKER"] == ticker]
+            plt.plot(df2["PRC"])
+            plt.legend(['PRC_'+str(ticker)], loc='upper left')
+            plt.show()
 
 batch_size = 100
-lookback_days = 150
-prediction_days = 30
-dimensions = 2
-epochs = 100
-rnn = RNN()
-df = rnn.parse_data("../data/pre_data_10years", "BAC")
-X_tr, X_ts, y_tr, y_ts = rnn.format_data(df, 100, lookback_d=lookback_days, prediction_d=prediction_days)
-rnn.init_model(batch_size, lookback_days, dimensions, prediction_days, 0.6)
-rnn.run_model(batch_size, epochs, X_tr, X_ts, y_tr, y_ts)
+lookback_days = 50
+prediction_days = 10
+dimensions = 1
+epochs = 10
+rnn = RNN2()
+df = rnn.parse_data("../data/pre_data_10years", dummy=True, ticker="BAC")
+
+X_tr, X_ts, y_tr, y_ts = rnn.format_data2(df, batch_size, lookback_d=lookback_days, prediction_d=prediction_days)
+rnn.init_model2(batch_size, lookback_days, prediction_days, 0.6)
+# rnn.run_model2(batch_size, epochs, X_tr, X_ts, y_tr, y_ts)
+

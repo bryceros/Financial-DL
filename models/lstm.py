@@ -116,15 +116,15 @@ class Model:
         self.model.compile(loss='mse', optimizer='adam')
         return self.model
 
-    def train_model(self, X_tr, X_cv, y_tr, y_cv, verbose=2):
+    def train_model(self, X_tr, X_cv, y_tr, y_cv, ouput_file, verbose=2):
         # fit network
         self.model.fit(X_tr, y_tr, validation_data=(X_cv, y_cv), epochs=self.epochs, batch_size=self.batch_size, verbose=verbose)
-        self.save_model()
+        self.save_model(ouput_file)
         return self.model
 
-    def save_model(self):
+    def save_model(self, path):
         timestr = time.strftime("%Y%m%d-%H%M%S")
-        filename = os.path.join('/Users/Sai/Desktop/566/Financial-DL/saved_weights',self.ticker + '_'+timestr)
+        filename = os.path.join(path,self.ticker + '_'+timestr)
         self.model.save(filename)
 
     def load_model(self, weight_file):
@@ -158,7 +158,7 @@ def driver():
     TEST_RATIO = 0.2
     CROSS_VALIDATION_RATIO = 0.2
     LOOKBACK_DAYS = 30
-    PREDICTION_DAYS = 5
+    PREDICTION_DAYS = 1
     DATA_FILE = "../data/pre_data_10years"
     FEATURE_COLUMNS=['PRC']
     DIM = len(FEATURE_COLUMNS)
@@ -172,13 +172,13 @@ def driver():
         model = lstm.train_model(X_tr, X_cv, y_tr, y_cv)
 
 # driver()
-EPOCHS = 15
+EPOCHS = 100
 BATCH_SIZE = 50
 LEARNING_RATE = 0.1
 TEST_RATIO = 0.2
 CROSS_VALIDATION_RATIO = 0.2
 LOOKBACK_DAYS = 30
-PREDICTION_DAYS = 5
+PREDICTION_DAYS = 1
 DATA_FILE = "../data/pre_data_10years"
 FEATURE_COLUMNS=['PRC']
 DIM = len(FEATURE_COLUMNS)
@@ -188,5 +188,6 @@ df = lstm.parse_data(DATA_FILE, TICKER)
 df['PRC'] = np.log(df['PRC'])
 X_tr, X_cv, X_ts, y_tr, y_cv, y_ts = lstm.split_data_last_year_test(df, CROSS_VALIDATION_RATIO, BATCH_SIZE, LOOKBACK_DAYS, PREDICTION_DAYS, FEATURE_COLUMNS) 
 model = lstm.init_model(X_tr.shape[1:])
-# model = lstm.train_model(X_tr, X_cv, y_tr, y_cv)
-model = lstm.load_model('/Users/Sai/Desktop/566/Financial-DL/saved_weights/BAC_20191201-172602')
+output_file = '/Users/Sai/Desktop/566/Financial-DL/saved_models/'
+model = lstm.train_model(X_tr, X_cv, y_tr, y_cv, output_file)
+# model = lstm.load_model('/Users/Sai/Desktop/566/Financial-DL/saved_weights/BAC_20191201-172602')
