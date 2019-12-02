@@ -116,15 +116,15 @@ class Model:
         self.model.compile(loss='mse', optimizer='adam')
         return self.model
 
-    def train_model(self, X_tr, X_cv, y_tr, y_cv, verbose=2):
+    def train_model(self, X_tr, X_cv, y_tr, y_cv, save_weights_dir, verbose=2):
         # fit network
         self.model.fit(X_tr, y_tr, validation_data=(X_cv, y_cv), epochs=self.epochs, batch_size=self.batch_size, verbose=verbose)
-        self.save_model()
+        self.save_model(save_weights_dir)
         return self.model
 
-    def save_model(self):
+    def save_model(self, save_weights_dir):
         timestr = time.strftime("%Y%m%d-%H%M%S")
-        filename = os.path.join('./saved_weights',self.ticker + '_'+timestr)
+        filename = save_weights_dir+self.ticker + '_'+timestr
         self.model.save(filename)
 
     def load_model(self, weight_file):
@@ -136,57 +136,59 @@ class Model:
         return self.model
         
     
-def testing_helper(actual, pred, epochs, filename, save=True):
-    actual_0 = actual[:, 0]
-    pred_0 = pred[:, 0]
-    pred_1 = pred[:, 1]
-    pred_1 = np.delete(pred_1, pred_1.shape[0]-1)
-    pred_1 = np.insert(pred_1, 0, pred_1[0])
+def testing_helper(actual, pred, epochs, ticker, save_figures_dir, save=True):
+    actual_0 = actual.flatten()
+    pred_0 = pred.flatten()
     plt.figure()
     plt.plot(actual_0, 'g')
     plt.plot(pred_0, 'b')
-    plt.plot(pred_1, 'r')
-    plt.title("EPOCHS: "+str(epochs))
+    plt.title(ticker+" EPOCHS: "+str(epochs))
+    timestr = time.strftime("%Y%m%d-%H%M%S")
+    filename = save_figures_dir+ticker+'_'+timestr
     if save:
         plt.savefig(filename)
 
 def driver():
-    TICKERS = ['TROW', 'CMA', 'BEN', 'WFC', 'JPM', 'BK', 'NTRS', 'AXP', 'BAC', 'USB', 'MS', 'RJF', 'C', 'STT', 'SCHW', 'COF', 'IVZ', 'ETFC', 'AMG', 'GS', 'BLK', 'AMP', 'DFS']
-    EPOCHS = 15
+    TICKERS = ['TROW', 'CMA', 'BEN', 'WFC', 'JPM', 'BK', 'NTRS', 'AXP', 'BAC', 'USB', 'RJF', 'C', 'STT', 'SCHW', 'COF', 'IVZ', 'ETFC', 'AMG', 'GS', 'BLK', 'AMP', 'DFS']
+    EPOCHS = 100
     BATCH_SIZE = 50
-    LEARNING_RATE = 0.1
+    LEARNING_RATE = 0.001
     TEST_RATIO = 0.2
     CROSS_VALIDATION_RATIO = 0.2
     LOOKBACK_DAYS = 30
-    PREDICTION_DAYS = 5
-    DATA_FILE = "data/pre_data_10years"
+    PREDICTION_DAYS = 1
+    DATA_FILE = "../data/pre_data_10years"
     FEATURE_COLUMNS=['PRC']
     DIM = len(FEATURE_COLUMNS)
+    DIRECTORY = '/Users/Sai/Desktop/566/Financial-DL/trained_100_epochs_0001_lr/'
+    WEIGHTS_DIR = DIRECTORY+'/weights/'
+    FIGURES_DIR = DIRECTORY+'/figures/'
     for TICKER in TICKERS:
-        print('running dummy model for ticker',TICKER)
         lstm = Model(TICKER, BATCH_SIZE, EPOCHS, LEARNING_RATE, LOOKBACK_DAYS, PREDICTION_DAYS, DIM)
         df = lstm.parse_data(DATA_FILE, TICKER)
         df['PRC'] = np.log(df['PRC'])
         X_tr, X_cv, X_ts, y_tr, y_cv, y_ts = lstm.split_data_last_year_test(df, CROSS_VALIDATION_RATIO, BATCH_SIZE, LOOKBACK_DAYS, PREDICTION_DAYS, FEATURE_COLUMNS) 
         model = lstm.init_model(X_tr.shape[1:])
-        model = lstm.train_model(X_tr, X_cv, y_tr, y_cv)
+        model = lstm.train_model(X_tr, X_cv, y_tr, y_cv, WEIGHTS_DIR)
+        pred = model.predict(X_ts)
+        testing_helper(y_ts, pred, EPOCHS, TICKER, FIGURES_DIR, save=True)
 
-# driver()
-EPOCHS = 15
-BATCH_SIZE = 50
-LEARNING_RATE = 0.1
-TEST_RATIO = 0.2
-CROSS_VALIDATION_RATIO = 0.2
-LOOKBACK_DAYS = 30
-PREDICTION_DAYS = 5
-DATA_FILE = "data/pre_data_10years"
-FEATURE_COLUMNS=['PRC']
-DIM = len(FEATURE_COLUMNS)
-TICKER = 'BAC'
-lstm = Model(TICKER, BATCH_SIZE, EPOCHS, LEARNING_RATE, LOOKBACK_DAYS, PREDICTION_DAYS, DIM)
-df = lstm.parse_data(DATA_FILE, TICKER)
-df['PRC'] = np.log(df['PRC'])
-X_tr, X_cv, X_ts, y_tr, y_cv, y_ts = lstm.split_data_last_year_test(df, CROSS_VALIDATION_RATIO, BATCH_SIZE, LOOKBACK_DAYS, PREDICTION_DAYS, FEATURE_COLUMNS) 
-model = lstm.init_model(X_tr.shape[1:])
+driver()
+# EPOCHS = 100
+# BATCH_SIZE = 50
+# LEARNING_RATE = 0.1
+# TEST_RATIO = 0.2
+# CROSS_VALIDATION_RATIO = 0.2
+# LOOKBACK_DAYS = 30
+# PREDICTION_DAYS = 1
+# DATA_FILE = "../data/pre_data_10years"
+# FEATURE_COLUMNS=['PRC']
+# DIM = len(FEATURE_COLUMNS)
+# TICKER = 'IVZ'
+# lstm = Model(TICKER, BATCH_SIZE, EPOCHS, LEARNING_RATE, LOOKBACK_DAYS, PREDICTION_DAYS, DIM)
+# df = lstm.parse_data(DATA_FILE, TICKER)
+# df['PRC'] = np.log(df['PRC'])
+# X_tr, X_cv, X_ts, y_tr, y_cv, y_ts = lstm.split_data_last_year_test(df, CROSS_VALIDATION_RATIO, BATCH_SIZE, LOOKBACK_DAYS, PREDICTION_DAYS, FEATURE_COLUMNS) 
+# model = lstm.init_model(X_tr.shape[1:])
 # model = lstm.train_model(X_tr, X_cv, y_tr, y_cv)
-model = lstm.load_model('./saved_weights/BAC_20191201-172602')
+# model = lstm.load_model('./saved_weights/BAC_20191201-172602')
