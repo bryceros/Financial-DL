@@ -1,27 +1,24 @@
 import tensorflow as tf
 import numpy as np
-
+from models.lstm import Model
+import glob
 #from stable_baselines.common.base_class import BaseRLModel
 
 class Baseline():
+
     def __init__(self, env):
 
         # init 
         self.ac_space = env.action_space
         self.processed_obs = tf.placeholder(shape=[None,env.buf_obs[None].shape[1],env.buf_obs[None].shape[2]],dtype=tf.float32)
-
+        self.comp = ['TROW', 'CMA', 'BEN', 'WFC', 'JPM', 'BK', 'NTRS', 'AXP', 'BAC', 'USB', 'MS', 'RJF', 'C', 'STT', 'SCHW', 'COF', 'IVZ','ETFC','AMG','GS','BLK','AMP','DFS']
         # basic model
-        with tf.variable_scope("model", reuse=False):
-            activ = tf.nn.relu
-            frame, _ = self.processed_obs[:,:-1],self.processed_obs[:,-1]
-            frame_features = tf.keras.layers.LSTM(units=64,activation=activ)(frame[:,:-2])
-            
-            self.logit = tf.keras.layers.Dense(int(self.ac_space.shape[0]/2))(frame_features)
-
-        # setup
-        sess = tf.Session()
-        sess.run(tf.global_variables_initializer())
-        self.sess = sess
+        self.models = {}
+        for c in self.comp:
+            self.models[c] = Model(ticker=c, batch_size=c, epochs=0, lr=0, lookback_days=30, prediction_days=1, dim=1)
+            self.models[c].init_model((30,1))
+            filename = glob.glob("./saved_weights/"+c+"_*")[0]
+            self.models[c].load_model(filename)
 
     def predict(self, observation, state=None, mask=None, deterministic=False):
         """
@@ -45,15 +42,20 @@ class Baseline():
         :param deterministic: (bool) Whether or not to return deterministic actions.
         :return: (np.ndarray int, np.ndarray float, np.ndarray float) actions, q_values, states
         """
+        output = []
+        obs = obs[:,:-1]
+        obs = obs[:,:,:-2]
+        obs = obs[:,:,0::4]
 
-        output = self.sess.run([self.logit], {self.processed_obs: obs})
+        for i,c in zip(range(len(self.comp)),self.comp):
+            s = obs[:,:,i]
+            s1= s[:,:,np.newaxis]
+            output.append(self.models[c].model.predict(obs[:,:,i][:,:,np.newaxis])[0,0]-obs[:,-1,i])
+
         comp_i = np.argmax(output,axis=-1)
-        actions = []
-        for i in range(len(comp_i)):
-            action = np.zeros(self.ac_space.shape)
-            action[::2] = 2
-            action[1::2] = 255
-            action[2*comp_i] = 1
-            actions.append(action)
-        actions = np.array(actions)
-        return actions, None, None
+        
+        actions = np.zeros(self.ac_space.shape)
+        actions[::2] = 2
+        actions[1::2] = 255
+        actions[2*comp_i] = 1
+        return np.array([actions]), None, None

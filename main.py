@@ -5,6 +5,8 @@ import datetime as dt
 from stable_baselines.common.vec_env import DummyVecEnv
 from stable_baselines import PPO2, A2C
 
+import matplotlib
+matplotlib.use('TkAgg')
 from matplotlib import pyplot as plt
 
 from model import CustomPolicy
@@ -36,9 +38,9 @@ def run_model(is_train=True,model_name='rl_model'):
     test = df[int(0.9 * len(df)):].reset_index()
     # The algorithms require a vectorized environment to run
     if is_train:
-        env = DummyVecEnv([lambda: StockTradingEnv(train, train, 30, True)])
+        env = DummyVecEnv([lambda: StockTradingEnv(train, train, 29, True)])
     else:
-        env = DummyVecEnv([lambda: StockTradingEnv(test, train, 30, False)])
+        env = DummyVecEnv([lambda: StockTradingEnv(test, train, 29, False)])
 
     if is_train and model_name == 'rl_rand_model':
         model = PPO2(RandomPolicy, env, verbose=11, tensorboard_log="./log/rand_stock_tensorboard/")
@@ -68,18 +70,19 @@ def run_model(is_train=True,model_name='rl_model'):
         obs = env.reset()
         if model_name =='rl_model' and is_train:
             model.learn(total_timesteps=500000)
-        rewards = []
+        success = []
         for i in range(len(test.loc[:, 'TROW_PRC'].values) - 30):
             action, _states = model.predict(obs)
             obs, reward, done, info = env.step(action)
-            rewards.append(reward[0])
+            success.append(info[0]['success_rate'])
             env.render()
-        plt.plot(rewards,label=model_name)
+        plt.plot(success,label=model_name)
 
 
 
 if __name__ == '__main__':
-    models = [('rl_model',False),('rl_rand_model',False),('hr_model', False)]
+    models = [('rl_model',False),('rl_rand_model',False),('hr_model', False),('rnn_model',False)]
+    #models = [('rnn_model',False)]
     for name, is_train in models:
         run_model(is_train,name)
     plt.legend()

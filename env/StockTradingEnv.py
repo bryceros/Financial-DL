@@ -68,8 +68,15 @@ class StockTradingEnv(gym.Env):
                             5, c+"_"+a].values / MAX_SHARE_PRICE)
         frame = np.array(frame).T
         '''
-        #self.temp = [self.df.loc[self.current_step-self.LOOK_BACK_SIZE: self.current_step,c+'_PRC'].values for c in self.comp]
-        frame = self.scaler.transform(self.df.loc[self.current_step-self.LOOK_BACK_SIZE: self.current_step,:].values)
+        #frame = self.scaler.transform(self.df.loc[self.current_step-self.LOOK_BACK_SIZE: self.current_step,:].values)
+
+        for c in self.comp:
+            for a in self.attr:
+                if a == 'VOL':
+                    frame.append(self.df.loc[self.current_step-self.LOOK_BACK_SIZE: self.current_step, c+"_"+a].values)
+                else:
+                    frame.append(np.log(self.df.loc[self.current_step-self.LOOK_BACK_SIZE: self.current_step, c+"_"+a].values))
+        frame = np.array(frame).T
 
         #print('frame:',frame.shape)
 

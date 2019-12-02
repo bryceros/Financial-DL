@@ -16,7 +16,7 @@ class CustomPolicy(ActorCriticPolicy):
 
             frame, profile = self.processed_obs[:,:-1],self.processed_obs[:,-1]
 
-            frame_features = tf.keras.layers.LSTM(units=64,activation=activ)(frame[:,:-2])
+            frame_features = tf.keras.layers.LSTM(units=64,activation=activ)(frame[:,:,:-2])
             profile_features = profile
             extracted_features = tf.keras.layers.concatenate([frame_features,profile_features])
 
