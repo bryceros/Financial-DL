@@ -15,18 +15,18 @@ class CustomPolicy(ActorCriticPolicy):
             #extracted_features = tf.keras.layers.LSTM(units=64,activation=activ)(self.processed_obs)
 
             frame, profile = self.processed_obs[:,:-1],self.processed_obs[:,-1]
-
-            frame_features = tf.keras.layers.LSTM(units=64,activation=activ)(frame[:,:,:-2])
+            frame = frame[:,:,:-2]
+            frame_features = tf.keras.layers.LSTM(units=64,activation=activ)(frame)
             profile_features = profile
             extracted_features = tf.keras.layers.concatenate([frame_features,profile_features])
 
             pi_h = extracted_features
-            for i, layer_size in enumerate([128, 128, 128]):
+            for i, layer_size in enumerate([3, 128]):
                 pi_h = activ(tf.layers.dense(pi_h, layer_size, name='pi_fc' + str(i)))
             pi_latent = pi_h
 
             vf_h = extracted_features
-            for i, layer_size in enumerate([32, 32]):
+            for i, layer_size in enumerate([3, 32]):
                 vf_h = activ(tf.layers.dense(vf_h, layer_size, name='vf_fc' + str(i)))
             value_fn = tf.layers.dense(vf_h, 1, name='vf')
             vf_latent = vf_h

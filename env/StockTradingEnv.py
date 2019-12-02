@@ -73,7 +73,7 @@ class StockTradingEnv(gym.Env):
         for c in self.comp:
             for a in self.attr:
                 if a == 'VOL':
-                    frame.append(self.df.loc[self.current_step-self.LOOK_BACK_SIZE: self.current_step, c+"_"+a].values)
+                    frame.append(np.log(self.df.loc[self.current_step-self.LOOK_BACK_SIZE: self.current_step, c+"_"+a].values))
                 else:
                     frame.append(np.log(self.df.loc[self.current_step-self.LOOK_BACK_SIZE: self.current_step, c+"_"+a].values))
         frame = np.array(frame).T
@@ -161,12 +161,12 @@ class StockTradingEnv(gym.Env):
 
         delay_modifier = 0.998
 
-        #reward = self.net_worth * delay_modifier
-        next_prices = np.array([self.df.loc[self.current_step+1,c+'_PRC'] for c in self.comp])
+        reward = self.net_worth * delay_modifier
+        '''next_prices = np.array([self.df.loc[self.current_step+1,c+'_PRC'] for c in self.comp])
         current_p = np.sum(self.shares_held * self.current_prices)
         next_p = np.sum(self.shares_held * next_prices)
 
-        reward = delay_modifier*((next_p-current_p)/self.net_worth)
+        reward = delay_modifier*((next_p-current_p)/self.net_worth)'''
         done = self.net_worth <= 0
 
         obs = self._next_observation()

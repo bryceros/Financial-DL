@@ -46,7 +46,8 @@ def run_model(is_train=True,model_name='rl_model'):
         model = PPO2(RandomPolicy, env, verbose=11, tensorboard_log="./log/rand_stock_tensorboard/")
 
     elif not is_train and model_name == 'rl_rand_model':
-        model = PPO2.load("./ckpt/rl_rand_model")
+        #model = PPO2.load("./ckpt/rl_rand_model")
+        model = PPO2(RandomPolicy, env, verbose=11, tensorboard_log="./log/rand_stock_tensorboard/")
 
     elif is_train and model_name == 'rl_model':
         model = PPO2(CustomPolicy, env, verbose=11, tensorboard_log="./log/ppo2_stock_tensorboard/")
@@ -69,23 +70,25 @@ def run_model(is_train=True,model_name='rl_model'):
     for epoch in range(1):
         obs = env.reset()
         if model_name =='rl_model' and is_train:
-            model.learn(total_timesteps=500000)
+            #model.learn(total_timesteps=500000)
+            model.learn(total_timesteps=1000)
+            model.save("./ckpt/rl_model")
         success = []
         for i in range(len(test.loc[:, 'TROW_PRC'].values) - 30):
             action, _states = model.predict(obs)
             obs, reward, done, info = env.step(action)
             success.append(info[0]['success_rate'])
             env.render()
-        plt.plot(success,label=model_name)
+        #plt.plot(success,label=model_name)
 
 
 
 if __name__ == '__main__':
     models = [('rl_model',False),('rl_rand_model',False),('hr_model', False),('rnn_model',False)]
-    #models = [('rnn_model',False)]
+    #models = [('rl_model',True)]
     for name, is_train in models:
         run_model(is_train,name)
-    plt.legend()
-    plt.show()
+    #plt.legend()
+    #plt.show()
 
 
