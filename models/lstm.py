@@ -15,7 +15,7 @@ import matplotlib
 matplotlib.use('TkAgg')
 from matplotlib import pyplot as plt
 import time
-
+from keras import optimizers
 
 class Model:
     
@@ -113,7 +113,8 @@ class Model:
         self.model.add(Dense(100, activation='relu'))
         self.model.add(Dropout(0.2))
         self.model.add(Dense(self.prediction_days))
-        self.model.compile(loss='mse', optimizer='adam')
+        optimizer = optimizers.Adam(learning_rate=self.lr, clipnorm=1)
+        self.model.compile(loss='mse', optimizer=optimizer)
         return self.model
 
     def train_model(self, X_tr, X_cv, y_tr, y_cv, ouput_file, verbose=2):
@@ -139,13 +140,9 @@ class Model:
 def testing_helper(actual, pred, epochs, filename, save=True):
     actual_0 = actual[:, 0]
     pred_0 = pred[:, 0]
-    pred_1 = pred[:, 1]
-    pred_1 = np.delete(pred_1, pred_1.shape[0]-1)
-    pred_1 = np.insert(pred_1, 0, pred_1[0])
     plt.figure()
     plt.plot(actual_0, 'g')
     plt.plot(pred_0, 'b')
-    plt.plot(pred_1, 'r')
     plt.title("EPOCHS: "+str(epochs))
     if save:
         plt.savefig(filename)
@@ -182,12 +179,14 @@ PREDICTION_DAYS = 1
 DATA_FILE = "../data/pre_data_10years"
 FEATURE_COLUMNS=['PRC']
 DIM = len(FEATURE_COLUMNS)
-TICKER = 'BAC'
+TICKER = 'MS'
 lstm = Model(TICKER, BATCH_SIZE, EPOCHS, LEARNING_RATE, LOOKBACK_DAYS, PREDICTION_DAYS, DIM)
 df = lstm.parse_data(DATA_FILE, TICKER)
+df = df.dropna().reset_index()
 df['PRC'] = np.log(df['PRC'])
 X_tr, X_cv, X_ts, y_tr, y_cv, y_ts = lstm.split_data_last_year_test(df, CROSS_VALIDATION_RATIO, BATCH_SIZE, LOOKBACK_DAYS, PREDICTION_DAYS, FEATURE_COLUMNS) 
 model = lstm.init_model(X_tr.shape[1:])
 output_file = '/Users/Sai/Desktop/566/Financial-DL/saved_models/'
-model = lstm.train_model(X_tr, X_cv, y_tr, y_cv, output_file)
-# model = lstm.load_model('/Users/Sai/Desktop/566/Financial-DL/saved_weights/BAC_20191201-172602')
+# model = lstm.train_model(X_tr, X_cv, y_tr, y_cv, output_file)
+# weight_file = '/Users/Sai/Desktop/566/Financial-DL/saved_models/BAC_20191201-193332'
+# model = lstm.load_model(weight_file)
