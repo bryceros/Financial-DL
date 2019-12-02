@@ -21,7 +21,7 @@ class Model:
     
     def __init__(self, ticker, batch_size, epochs, lr, lookback_days, prediction_days, dim):
         self.scaler = MinMaxScaler()
-        self.ticker = TICKER
+        self.ticker = ticker
         self.batch_size = batch_size
         self.epochs = epochs
         self.lr = lr
@@ -124,7 +124,7 @@ class Model:
 
     def save_model(self):
         timestr = time.strftime("%Y%m%d-%H%M%S")
-        filename = os.path.join('/Users/Sai/Desktop/566/Financial-DL/saved_models',self.ticker + '_'+timestr)
+        filename = os.path.join('/Users/Sai/Desktop/566/Financial-DL/saved_weights',self.ticker + '_'+timestr)
         self.model.save(filename)
 
     def load_model(self, weight_file):
@@ -136,7 +136,7 @@ class Model:
         return self.model
         
     
-def testing_helper(actual, pred):
+def testing_helper(actual, pred, epochs, filename, save=True):
     actual_0 = actual[:, 0]
     pred_0 = pred[:, 0]
     pred_1 = pred[:, 1]
@@ -146,12 +146,35 @@ def testing_helper(actual, pred):
     plt.plot(actual_0, 'g')
     plt.plot(pred_0, 'b')
     plt.plot(pred_1, 'r')
-    plt.show(block=False)
+    plt.title("EPOCHS: "+str(epochs))
+    if save:
+        plt.savefig(filename)
 
-TICKER = "JPM"
+def driver():
+    TICKERS = ['TROW', 'CMA', 'BEN', 'WFC', 'JPM', 'BK', 'NTRS', 'AXP', 'BAC', 'USB', 'MS', 'RJF', 'C', 'STT', 'SCHW', 'COF', 'IVZ', 'ETFC', 'AMG', 'GS', 'BLK', 'AMP', 'DFS']
+    EPOCHS = 15
+    BATCH_SIZE = 50
+    LEARNING_RATE = 0.1
+    TEST_RATIO = 0.2
+    CROSS_VALIDATION_RATIO = 0.2
+    LOOKBACK_DAYS = 30
+    PREDICTION_DAYS = 5
+    DATA_FILE = "../data/pre_data_10years"
+    FEATURE_COLUMNS=['PRC']
+    DIM = len(FEATURE_COLUMNS)
+    for TICKER in TICKERS:
+        print('running dummy model for ticker',TICKER)
+        lstm = Model(TICKER, BATCH_SIZE, EPOCHS, LEARNING_RATE, LOOKBACK_DAYS, PREDICTION_DAYS, DIM)
+        df = lstm.parse_data(DATA_FILE, TICKER)
+        df['PRC'] = np.log(df['PRC'])
+        X_tr, X_cv, X_ts, y_tr, y_cv, y_ts = lstm.split_data_last_year_test(df, CROSS_VALIDATION_RATIO, BATCH_SIZE, LOOKBACK_DAYS, PREDICTION_DAYS, FEATURE_COLUMNS) 
+        model = lstm.init_model(X_tr.shape[1:])
+        model = lstm.train_model(X_tr, X_cv, y_tr, y_cv)
+
+# driver()
+EPOCHS = 15
 BATCH_SIZE = 50
-EPOCHS = 300
-LEARNING_RATE = 0.6
+LEARNING_RATE = 0.1
 TEST_RATIO = 0.2
 CROSS_VALIDATION_RATIO = 0.2
 LOOKBACK_DAYS = 30
@@ -159,16 +182,11 @@ PREDICTION_DAYS = 5
 DATA_FILE = "../data/pre_data_10years"
 FEATURE_COLUMNS=['PRC']
 DIM = len(FEATURE_COLUMNS)
+TICKER = 'BAC'
 lstm = Model(TICKER, BATCH_SIZE, EPOCHS, LEARNING_RATE, LOOKBACK_DAYS, PREDICTION_DAYS, DIM)
 df = lstm.parse_data(DATA_FILE, TICKER)
 df['PRC'] = np.log(df['PRC'])
-# X_tr, X_cv, X_ts, y_tr, y_cv, y_ts = lstm.split_data(df, TEST_RATIO, CROSS_VALIDATION_RATIO, BATCH_SIZE, LOOKBACK_DAYS, PREDICTION_DAYS, FEATURE_COLUMNS)
-X_tr, X_cv, X_ts, y_tr, y_cv, y_ts = lstm.split_data_last_year_test(df, CROSS_VALIDATION_RATIO, BATCH_SIZE, LOOKBACK_DAYS, PREDICTION_DAYS, FEATURE_COLUMNS)
-# lstm.build_model(X_tr, X_cv, y_tr, y_cv)
-filename = '/Users/Sai/Desktop/566/Financial-DL/saved_models/JPM_20191130-021338'
+X_tr, X_cv, X_ts, y_tr, y_cv, y_ts = lstm.split_data_last_year_test(df, CROSS_VALIDATION_RATIO, BATCH_SIZE, LOOKBACK_DAYS, PREDICTION_DAYS, FEATURE_COLUMNS) 
 model = lstm.init_model(X_tr.shape[1:])
-model = lstm.train_model(X_tr, X_cv, y_tr, y_cv)
-
-pred = model.predict(X_ts)
-testing_helper(y_ts, pred)
-
+# model = lstm.train_model(X_tr, X_cv, y_tr, y_cv)
+model = lstm.load_model('/Users/Sai/Desktop/566/Financial-DL/saved_weights/BAC_20191201-172602')
