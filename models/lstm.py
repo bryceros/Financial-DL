@@ -152,15 +152,15 @@ def driver():
     TICKERS = ['TROW', 'CMA', 'BEN', 'WFC', 'JPM', 'BK', 'NTRS', 'AXP', 'BAC', 'USB', 'RJF', 'C', 'STT', 'SCHW', 'COF', 'IVZ', 'ETFC', 'AMG', 'GS', 'BLK', 'AMP', 'DFS']
     EPOCHS = 100
     BATCH_SIZE = 50
-    LEARNING_RATE = 0.001
+    LEARNING_RATE = 0.01
     TEST_RATIO = 0.2
     CROSS_VALIDATION_RATIO = 0.2
     LOOKBACK_DAYS = 30
     PREDICTION_DAYS = 1
-    DATA_FILE = "../data/pre_data_10years"
+    DATA_FILE = "/Users/Sai/Desktop/566/Financial-DL/data/pre_data_10years"
     FEATURE_COLUMNS=['PRC']
     DIM = len(FEATURE_COLUMNS)
-    DIRECTORY = '/Users/Sai/Desktop/566/Financial-DL/trained_100_epochs_0001_lr/'
+    DIRECTORY = '/Users/Sai/Desktop/566/Financial-DL/trained_100_epochs_001_lr/'
     WEIGHTS_DIR = DIRECTORY+'/weights/'
     FIGURES_DIR = DIRECTORY+'/figures/'
     for TICKER in TICKERS:
@@ -173,7 +173,7 @@ def driver():
         pred = model.predict(X_ts)
         testing_helper(y_ts, pred, EPOCHS, TICKER, FIGURES_DIR, save=True)
 
-driver()
+# driver()
 # EPOCHS = 100
 # BATCH_SIZE = 50
 # LEARNING_RATE = 0.1

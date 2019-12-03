@@ -50,10 +50,10 @@ def run_model(is_train=True,model_name='rl_model'):
         model = PPO2(RandomPolicy, env, verbose=11, tensorboard_log="./log/rand_stock_tensorboard/")
 
     elif is_train and model_name == 'rl_model':
-        model = PPO2(CustomPolicy, env, verbose=11, tensorboard_log="./log/ppo2_stock_tensorboard/")
-
+       #model = PPO2(CustomPolicy, env, verbose=11, tensorboard_log="./log/ppo2_stock_tensorboard/")
+        model = PPO2.load("./ckpt/rl_model",env=env)
     elif not is_train and model_name == 'rl_model':
-        model = PPO2.load("./ckpt/rl_model")
+        model = PPO2.load("./ckpt/rl_model",env=env)
 
     elif not is_train and model_name == 'hr_model':
         model = Heristic(env)
@@ -68,27 +68,33 @@ def run_model(is_train=True,model_name='rl_model'):
         assert False
 
     for epoch in range(1):
-        obs = env.reset()
         if model_name =='rl_model' and is_train:
-            #model.learn(total_timesteps=500000)
-            model.learn(total_timesteps=1000)
+            obs = env.reset()
+            model.learn(total_timesteps=100000)
             model.save("./ckpt/rl_model")
+        obs = env.reset()
         success = []
         for i in range(len(test.loc[:, 'TROW_PRC'].values) - 30):
             action, _states = model.predict(obs)
             obs, reward, done, info = env.step(action)
             success.append(info[0]['success_rate'])
             env.render()
-        plt.plot(success,label=model_name)
-        plt.show(block=False)
-
-
+        return success
+        # plt.plot(success,label=model_name)
+        # plt.show(block=False)
 
 if __name__ == '__main__':
     models = [('rl_model',False),('rl_rand_model',False),('hr_model', False),('rnn_model',False)]
-    #models = [('rl_model',True)]
     plt.figure()
+    success_plots = []
+    plot_names = []
     for name, is_train in models:
-        run_model(is_train,name)
+        success = run_model(is_train,name)
+        success_plots.append(plt.plot(success, label=name))
+        plot_names.append(name)
+    
+    import pdb; pdb.set_trace()
+    plt.legend(success_plots, plot_names)
+    plt.show(block=False)
 
-
+    
