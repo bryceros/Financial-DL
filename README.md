@@ -3,6 +3,7 @@
 ## Motivation
 The stock market has been a longstanding icon of economic opportunity in American history. It has been notoriously difficult, if not impossible, to predict and profit from. Regardless of economic prosperity or decline, one question that’s arisen in the past few decades is the value of human insight versus the raw power of computers in managing portfolios. In this project, we analyze the performance of human investors using basic heuristics to buy and sell stocks against the performance of deep learning agents. We try three main approaches: human heuristic, LSTM + human heuristic (hybrid), and reinforcement learning. 
 
+![Alt text](https://github.com/stlenoski/Financial-DL/blob/master/report_pics/motivation.png)
 
 
 Human Heuristic
