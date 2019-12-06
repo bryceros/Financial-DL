@@ -47,11 +47,11 @@ One of the most intuitive investment strategies in stock market is “Buy low, s
 For our RNN model we decided to use a simple LSTM that took in the time series data and outputted a prediction trend for D days. Initially we obtained pretty poor results by trying to predict a 30 day trend but as we decreased D our results were a lot better. Finally, we decided to predict just a single day as input to our human heuristic. 
 
 Architecture of RNN model:
-
+![Alt text](https://github.com/stlenoski/Financial-DL/blob/master/report_pics/lstm.png "Architecture of RNN model")
 
 For each company we trained and the above model to give a single day point prediction given 30 days input. We tried batch sizes of 30, 50, 100  and 150, epochs in the range of 50, 100, and 150 and learning rates of .1, .01, and .001. We saw the best results with a batch size of 50 and 100 epochs trained with learning rate .001.  The 22 trained models loaded into our RL environment combined with our human heuristic allowed our agent to operate by getting a prediction and feeding it into the heuristic and selecting an action accordingly.
 
-Sample predictions graphs on testing data (2018)
+![Alt text](https://github.com/stlenoski/Financial-DL/blob/master/report_pics/rnn_predictiosn.png "Sample prediction graphs on testing data")
 
 
 
@@ -60,6 +60,8 @@ Sample predictions graphs on testing data (2018)
 Out of all the models above, the RL is the closest to represent what a human interprets when choosing stocks. This is because human chooses stock usually not only on the current market by also considers the current financial position, e.g. the portfolio. The input of the RL is broken down into two parts frames and portfolio. Firstly, the frames is simply same the input for rnn and the human heuristic is price, volume, bid and ask for the last 30 days. The difference is the portfolio also inputted into the model. The portfolio is broken down into balance (current cash), net worth (balance+value of all currently owned stocks), current shares held (list of the amount of currently held shares of a stock for each company), cost basis (what the average bought price for that stock currently owned for each company), total shares sold (the amount of that stock sold per company), total shares value which is the amount of money made by a certain stock. Both inputs were fed into a Proximal Policy Optimization (PPO) and trained with a simple reward function maximizing the net worth of it’s profilio.   
 
 ## Results
+
+![Alt text](https://github.com/stlenoski/Financial-DL/blob/master/report_pics/results.png "Random vs Human vs RNN + Human vs RL")
 
 After running the different methods in the RL environment described previously we observed that the rnn and rl methods outperformed the human heuristic. The random baseline generally follows the market trend and thus is not expected to yield substantive results. In general after running multiple times we see that our rnn and rl models outperformed the human heuristic as seen in one such run above. One possible explanation for this is the naiveness of our human heuristic. In reality, humans factor much more information and base their decisions of more than just an average of competing stocks. Also our human heuristic is more susceptible to short term dips or repetitive patterns that may be caught by the deep learning models. One further consideration is that one year is not really a significant amount of time to test our models. Even within this period there is overlap between which models are outperforming the others. Extending the time frame might show that the models do not conclusively outperform one another. More testing over periods of economic prosperity as well as downturn would provide a more rigorous answer to which method is the best of the three.
  
