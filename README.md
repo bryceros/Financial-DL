@@ -31,7 +31,7 @@ We cleaned and preprocessed our data by removing entries where the values was nu
 
 ## RL Environment
 
-The Environment setup looks the past 30 days and to maximize the net worth of the next day. In order to make discrete action with the environment every model need to communicate two things per stock. First whether to buy sell hold the stock. We implement this by allowing the first set of logits three options if it outputs <1 buy, <2 sell, and <3 hold. Secondly we needed to determine a way of deciding the amount of potential stock to buy per an action. Based upon that using percentage total buy/sell didn’t work we decided on having the network produces discrete output between the ranges of [0,255] where 255 is the maximum shares of a stock that could be bought at one action set. 
+To simulate our experiments we extended an openAI environment (blog post in reference). The Environment setup looks the past 30 days and to maximize the net worth of the next day. In order to make discrete action with the environment every model need to communicate two things per stock. First whether to buy sell hold the stock. We implement this by allowing the first set of logits three options if it outputs <1 buy, <2 sell, and <3 hold. Secondly we needed to determine a way of deciding the amount of potential stock to buy per an action. Based upon that using percentage total buy/sell didn’t work we decided on having the network produces discrete output between the ranges of [0,255] where 255 is the maximum shares of a stock that could be bought at one action set. 
 	
 ## Methods
 ### Human heuristic
