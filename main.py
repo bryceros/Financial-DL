@@ -80,8 +80,6 @@ def run_model(is_train=True,model_name='rl_model'):
             success.append(info[0]['success_rate'])
             env.render()
         return success
-        # plt.plot(success,label=model_name)
-        # plt.show(block=False)
 
 if __name__ == '__main__':
     models = [('rl_model',False),('rl_rand_model',False),('hr_model', False),('rnn_model',False)]
@@ -90,11 +88,7 @@ if __name__ == '__main__':
     plot_names = []
     for name, is_train in models:
         success = run_model(is_train,name)
-        success_plots.append(plt.plot(success, label=name))
-        plot_names.append(name)
+        success_plots.append((name, success))
     
-    import pdb; pdb.set_trace()
-    plt.legend(success_plots, plot_names)
-    plt.show(block=False)
 
     
