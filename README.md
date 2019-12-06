@@ -26,7 +26,7 @@ For our project we used the CRSP dataset for historical daily stock market data 
 
 We cleaned and preprocessed our data by removing entries where the values was null for any of the fields and made sure that we had 10 years of data for each stock we considered. We tried min max normalization for our data as well but log normalizing the values yielded better performance in our LSTM so we decided to conduct all the experiments with log normalized data. This may have been due to the extreme variation in the data over the 10 year span. We use the first 9 years as training set (2009-2017), and the last 1 year as testing set (2018). 
 
-Sample data for Goldman Sachs
+![Alt text](https://github.com/stlenoski/Financial-DL/blob/master/report_pics/sample_data.png "Sample data for Goldman Sachs")
 
 
 
@@ -37,6 +37,11 @@ The Environment setup looks the past 30 days and to maximize the net worth of th
 ## Methods
 ### Human heuristic
 One of the most intuitive investment strategies in stock market is “Buy low, sell high”. Buying low means purchasing shares when stocks have hit bottom price. Conversely, selling high means selling shares when stocks have hit their peak. We implemented an adjusted “buy low, sell high” strategy as our human heuristic. An agent has an initial balance of $10,000. At time T, the agent observes the current stock prices (closing prices), as well as the historical prices of the past 30 days. A stock is considered at “low” price if the current price is lower than the average price over the past 30 days. Hence, the agent’s action is to buy the stock which has the lowest price (the most negative deviation from the average) with all the money in his balance. Meanwhile, the agent will sell all the shares currently held (arguably, these stocks are not at their lowest price on that day). We add a constraint on the number of buy and sell shares to simplify the comparison of different models. For each stock, buy and sell shares will be min(current balance, total value of 255 shares), which ensures the agent’s action and reward are within a feasible space. The performance of our human heuristic is evaluated as the daily returns using this strategy. To compare human heuristic baseline with other models, we compute the daily returns for the testing period (the last year). 
+
+![Alt text](https://github.com/stlenoski/Financial-DL/blob/master/report_pics/price.png)
+
+
+
 
 ### RNN (LSTM) + Human Heuristic
 For our RNN model we decided to use a simple LSTM that took in the time series data and outputted a prediction trend for D days. Initially we obtained pretty poor results by trying to predict a 30 day trend but as we decreased D our results were a lot better. Finally, we decided to predict just a single day as input to our human heuristic. 
