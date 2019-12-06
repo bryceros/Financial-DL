@@ -20,7 +20,7 @@ A better heuristic would be to take floating average of the stock price for the 
 
 For our project we used the CRSP dataset for historical daily stock market data for 22 of the largest companies in the financial sector from 2009 to 2018. We queries the database for Price, Volume, Bid and Ask for our 22 selected tickers. 
 
-For reference:
+22 stocks used in our project:
 ‘TROW’, ‘CMA’, ‘BEN’, ‘WFC’, ‘JPM’, ‘BK’, ‘NTRS’, ‘AXP’, ‘BAC’, ‘USB’, ‘RJF’, ‘C’, ‘STT’, ‘SCHW’, ‘COF’, ‘IVZ’,‘ETFC’,‘AMG’,‘GS’,‘BLK’,‘AMP’,‘DFS’
 
 We cleaned and preprocessed our data by removing entries where the values was null for any of the fields and made sure that we had 10 years of data for each stock we considered. We tried min max normalization for our data as well but log normalizing the values yielded better performance in our LSTM so we decided to conduct all the experiments with log normalized data. This may have been due to the extreme variation in the data over the 10 year span. We use the first 9 years as training set (2009-2017), and the last 1 year as testing set (2018). 
