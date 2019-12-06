@@ -6,7 +6,7 @@ The stock market has been a longstanding icon of economic opportunity in America
 
 
 Human Heuristic
- The most naive human heuristic could be just picking a random stock from a top company and investing in it. In such an approach we are not certain that we will make a profit or not. Like here we picked some random stocks to invest in and plotted the profit.
+The most naive human heuristic could be just picking a random stock from a top company and investing in it. In such an approach we are not certain that we will make a profit or not. Like here we picked some random stocks to invest in and plotted the profit.
 Here we can see we made a negative profit.
 
 
@@ -31,7 +31,7 @@ Sample data for Goldman Sachs
 
 ## RL Environment
 
- 	The Environment setup looks the past 30 days and to maximize the net worth of the next day. In order to make discrete action with the environment every model need to communicate two things per stock. First whether to buy sell hold the stock. We implement this by allowing the first set of logits three options if it outputs <1 buy, <2 sell, and <3 hold. Secondly we needed to determine a way of deciding the amount of potential stock to buy per an action. Based upon that using percentage total buy/sell didn’t work we decided on having the network produces discrete output between the ranges of [0,255] where 255 is the maximum shares of a stock that could be bought at one action set. 
+The Environment setup looks the past 30 days and to maximize the net worth of the next day. In order to make discrete action with the environment every model need to communicate two things per stock. First whether to buy sell hold the stock. We implement this by allowing the first set of logits three options if it outputs <1 buy, <2 sell, and <3 hold. Secondly we needed to determine a way of deciding the amount of potential stock to buy per an action. Based upon that using percentage total buy/sell didn’t work we decided on having the network produces discrete output between the ranges of [0,255] where 255 is the maximum shares of a stock that could be bought at one action set. 
 	
 ## Methods
 -	Human heuristic
@@ -55,7 +55,7 @@ Sample predictions graphs on testing data (2018)
 ## Results
 
 
-	After running the different methods in the RL environment described previously we observed that the rnn and rl methods outperformed the human heuristic. The random baseline generally follows the market trend and thus is not expected to yield substantive results. In general after running multiple times we see that our rnn and rl models outperformed the human heuristic as seen in one such run above. One possible explanation for this is the naiveness of our human heuristic. In reality, humans factor much more information and base their decisions of more than just an average of competing stocks. Also our human heuristic is more susceptible to short term dips or repetitive patterns that may be caught by the deep learning models. One further consideration is that one year is not really a significant amount of time to test our models. Even within this period there is overlap between which models are outperforming the others. Extending the time frame might show that the models do not conclusively outperform one another. More testing over periods of economic prosperity as well as downturn would provide a more rigorous answer to which method is the best of the three.
+After running the different methods in the RL environment described previously we observed that the rnn and rl methods outperformed the human heuristic. The random baseline generally follows the market trend and thus is not expected to yield substantive results. In general after running multiple times we see that our rnn and rl models outperformed the human heuristic as seen in one such run above. One possible explanation for this is the naiveness of our human heuristic. In reality, humans factor much more information and base their decisions of more than just an average of competing stocks. Also our human heuristic is more susceptible to short term dips or repetitive patterns that may be caught by the deep learning models. One further consideration is that one year is not really a significant amount of time to test our models. Even within this period there is overlap between which models are outperforming the others. Extending the time frame might show that the models do not conclusively outperform one another. More testing over periods of economic prosperity as well as downturn would provide a more rigorous answer to which method is the best of the three.
  
 
 
