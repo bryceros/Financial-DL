@@ -6,6 +6,12 @@ The stock market has been a longstanding icon of economic opportunity in America
 ![Alt text](https://github.com/stlenoski/Financial-DL/blob/master/report_pics/motivation.png)
 
 
+Human Heuristic
+The most naive human heuristic could be just picking a random stock from a top company and investing in it. In such an approach we are not certain that we will make a profit or not. Like here we picked some random stocks to invest in and plotted the profit.
+Here we can see we made a negative profit.
+
+
+A better heuristic would be to take floating average of the stock price for the various companies. Check their current stock price and if the price lower than the company’s floating average and the market is favourable i.e. the market trend is positive. We invest for that company. Applying this heuristic the result we got are here. 
 
 
 
@@ -45,7 +51,7 @@ Architecture of RNN model:
 
 For each company we trained and the above model to give a single day point prediction given 30 days input. We tried batch sizes of 30, 50, 100  and 150, epochs in the range of 50, 100, and 150 and learning rates of .1, .01, and .001. We saw the best results with a batch size of 50 and 100 epochs trained with learning rate .001.  The 22 trained models loaded into our RL environment combined with our human heuristic allowed our agent to operate by getting a prediction and feeding it into the heuristic and selecting an action accordingly.
 
-![Alt text](https://github.com/stlenoski/Financial-DL/blob/master/report_pics/rnn_predictiosn.png "Sample prediction graphs on testing data")
+![Alt text](https://github.com/stlenoski/Financial-DL/blob/master/report_pics/rnn_predictions.png "Sample prediction graphs on testing data")
 
 
 
@@ -55,7 +61,7 @@ Out of all the models above, the RL is the closest to represent what a human int
 
 ## Results
 
-![Alt text](https://github.com/stlenoski/Financial-DL/blob/master/report_pics/results.png "Random vs Human vs RNN + Human vs RL")
+![Alt text](https://github.com/stlenoski/Financial-DL/blob/master/report_pics/combined.png "Random vs Human vs RNN + Human vs RL")
 
 After running the different methods in the RL environment described previously we observed that the rnn and rl methods outperformed the human heuristic. The random baseline generally follows the market trend and thus is not expected to yield substantive results. In general after running multiple times we see that our rnn and rl models outperformed the human heuristic as seen in one such run above. One possible explanation for this is the naiveness of our human heuristic. In reality, humans factor much more information and base their decisions of more than just an average of competing stocks. Also our human heuristic is more susceptible to short term dips or repetitive patterns that may be caught by the deep learning models. One further consideration is that one year is not really a significant amount of time to test our models. Even within this period there is overlap between which models are outperforming the others. Extending the time frame might show that the models do not conclusively outperform one another. More testing over periods of economic prosperity as well as downturn would provide a more rigorous answer to which method is the best of the three.
  
