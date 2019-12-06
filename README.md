@@ -6,12 +6,6 @@ The stock market has been a longstanding icon of economic opportunity in America
 ![Alt text](https://github.com/stlenoski/Financial-DL/blob/master/report_pics/motivation.png)
 
 
-Human Heuristic
-The most naive human heuristic could be just picking a random stock from a top company and investing in it. In such an approach we are not certain that we will make a profit or not. Like here we picked some random stocks to invest in and plotted the profit.
-Here we can see we made a negative profit.
-
-
-A better heuristic would be to take floating average of the stock price for the various companies. Check their current stock price and if the price lower than the company’s floating average and the market is favourable i.e. the market trend is positive. We invest for that company. Applying this heuristic the result we got are here. 
 
 
 
